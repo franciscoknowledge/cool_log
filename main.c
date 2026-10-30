@@ -14,10 +14,17 @@ int main(void) {
     so_peak = fopen("hehe.peak", "r");
     if (so_peak == NULL) {
 
-        cl_print_logn("couldnt open the test file!");
         cl_end_log();
 
         exit(EXIT_FAILURE);
+
+    }
+
+    if (1) {
+
+        cl_logn_debug("hey");
+        cl_end_log();
+        return 0;
 
     }
 
@@ -27,8 +34,6 @@ int main(void) {
         if (strlen(read_buf) == 0)
             continue;
         
-        cl_print_logn(read_buf);
-
     }
 
     cl_end_log();
