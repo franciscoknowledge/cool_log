@@ -5,19 +5,39 @@
 #include <time.h>
 #include <string.h>
 #include <stddef.h>
+#include <stdarg.h>
 
-char _timestamp_buf[2000] = {0};
-struct tm _tm_now;
-time_t _timestamp;
+#define _CL_TIMESTAMP_BUF_SIZE 2000
+#define _CL_PRINT_BUF_SIZE 4096
 
-FILE* log_file = NULL;
+static char timestamp_buf[_CL_TIMESTAMP_BUF_SIZE] = {0}; /* do not modify outside timestamp functions please */
+static char print_buf[_CL_PRINT_BUF_SIZE];
 
-void _fill_timestamp_buf(void) {
+static struct tm _tm_now;
+static time_t _timestamp;
 
-    memset(_timestamp_buf, 0, 2000);
+static FILE* log_file = NULL;
+
+static void _prepare_timestamp_stuff(void) {
+
+    _timestamp = time(NULL);
+    memset(timestamp_buf, 0, _CL_TIMESTAMP_BUF_SIZE);
 
     localtime_s(&_tm_now, &_timestamp);
-    strftime(_timestamp_buf, 2000, "%d|%m|%Y;%H|%M|%S", &_tm_now);
+
+}
+
+static void fill_timestamp_buf_time(void) {
+
+    _prepare_timestamp_stuff();
+    strftime(timestamp_buf, _CL_TIMESTAMP_BUF_SIZE, "%H.%M.%S", &_tm_now);
+
+}
+
+static void fill_timestamp_buf_date(void) {
+
+    _prepare_timestamp_stuff();
+    strftime(timestamp_buf, _CL_TIMESTAMP_BUF_SIZE, "%d.%m.%Y;%H.%M.%S", &_tm_now);
 
 }
 
@@ -31,9 +51,31 @@ bool cl_is_log_initialized(void) {
 
 }
 
-void cl_print_log(const char* fmt) {
+/* no newline needed, pass fmt string and arguments */
+void cl_print_logn(const char* fmt, ...) {
 
-    char timestamp_buf[2000] = {0};
+    if (!cl_is_log_initialized())
+        return;
+
+    fill_timestamp_buf_time();
+
+    memset(print_buf, 0, _CL_PRINT_BUF_SIZE);
+    int len = snprintf(print_buf, _CL_PRINT_BUF_SIZE, "[%s] : ", timestamp_buf);
+
+    if (len < 0 || len >= _CL_PRINT_BUF_SIZE) {
+
+        return;
+
+    }
+
+    va_list args;
+    va_start(args, fmt);
+
+        vsnprintf(print_buf + len, sizeof(print_buf) - len, fmt, args);
+
+    va_end(args);
+
+    fprintf_s(log_file, "%s\n", print_buf);
 
 }
 
@@ -41,21 +83,15 @@ void cl_init_log(const char* filename) {
 
     if (cl_is_log_initialized())
         return;
+    
+    char filename_buf[_CL_PRINT_BUF_SIZE] = {0};
+    snprintf(filename_buf, _CL_PRINT_BUF_SIZE, "%s", filename);
 
-    char timestamp_buf[2000] = {0};
-    char filename_buf[2000] = {0};
+    fill_timestamp_buf_date();
 
-    time_t timestamp = time(NULL);
-    struct tm tm_now;
-
-    localtime_s(&tm_now, &timestamp);
-
-    strftime(timestamp_buf, 2000, "%d|%m|%Y;%H|%M|%S", &tm_now);
-    snprintf(filename_buf, 2000, "%s", filename);
-
-    strcat_s(filename_buf, 2000, "_");
-    strcat_s(filename_buf, 2000, timestamp_buf);
-    strcat_s(filename_buf, 2000, ".cool_log");
+    strcat_s(filename_buf, _CL_PRINT_BUF_SIZE, "_");
+    strcat_s(filename_buf, _CL_PRINT_BUF_SIZE, timestamp_buf);
+    strcat_s(filename_buf, _CL_PRINT_BUF_SIZE, ".cool_log");
 
     fopen_s(&log_file, filename_buf, "w");
 
@@ -65,5 +101,17 @@ void cl_init_log(const char* filename) {
         return;
 
     }
+
+    cl_print_logn("log started\n");
+
+}
+
+void cl_end_log() {
+
+    if (!cl_is_log_initialized())
+        return;
+
+    cl_print_logn("log ended!\nbye bye!");
+    fclose(log_file);
 
 }
