@@ -16,6 +16,14 @@ static const char* const LOG_STRINGS[] = {
     [CL_LEVEL_NONE] = "NONE",
 };
 
+static const char* const MODE_STRINGS[] = {
+    [CL_MODE_NEW] = "NEW",
+    [CL_MODE_OVERWRITE] = "OVERWRITE",
+    [CL_MODE_APPEND] = "APPEND",
+};
+
+
+static Cl_Log_Mode log_mode = CL_MODE_NEW;
 static Cl_Log_Level log_level = CL_LEVEL_DEBUG;
 static FILE* log_file = NULL;
 
@@ -38,6 +46,15 @@ static const char* _get_log_str(Cl_Log_Level level) {
         return "UNKNOWN";
 
     return LOG_STRINGS[level];
+
+}
+
+static const char* _get_mode_str(Cl_Log_Mode mode) {
+
+    if ((mode < 0) || (mode >= CL_MODE_COUNT) || (MODE_STRINGS[mode] == NULL))
+        return "UNKNOWN";
+
+    return MODE_STRINGS[mode];
 
 }
 
@@ -82,6 +99,13 @@ static void _forced_log(const char* fmt, ...) {
         va_start(args, fmt);
         _print_logn_internal(CL_LEVEL_INFO, NULL, 0, fmt, args);
     va_end(args);
+
+}
+
+void cl_set_log_mode(Cl_Log_Mode mode) {
+
+    if (mode < 0 || mode >= CL_MODE_COUNT)
+        log_mode = CL_MODE_NEW;
 
 }
 
@@ -138,7 +162,9 @@ void cl_init_log(const char* filename) {
 
     }
     
-    _forced_log("hi!\nlog started!");
+    _forced_log("hi!");
+    _forced_log("mode: %s", _get_mode_str(log_mode));
+    _forced_log("level: %s\nlog started!", _get_log_str(log_level));
 
 }
 
