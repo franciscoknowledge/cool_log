@@ -3,8 +3,6 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <time.h>
-#include <string.h>
-#include <stddef.h>
 #include <stdarg.h>
 
 #define CL_TIMESTAMP_BUF_SIZE 64
@@ -15,41 +13,22 @@ static FILE* log_file = NULL;
 static void get_timestamp(char* output_buf, size_t size, const char* fmt) {
 
     time_t now = time(NULL);
-    struct tm tm_now;
+    struct tm tm_now = {0};
 
     localtime_s(&tm_now, &now);
+
+    /* kill buffer on error */
     if (strftime(output_buf, size, fmt, &tm_now) == 0)
         output_buf[0] = '\0';
 
 }
 
-/*
-static void fill_timestamp_buf_time(void) {
-
-    _prepare_timestamp_stuff();
-    strftime(timestamp_buf, _CL_TIMESTAMP_BUF_SIZE, "%H.%M.%S", &_tm_now);
-
-}
-
-static void fill_timestamp_buf_date(void) {
-
-    _prepare_timestamp_stuff();
-    strftime(timestamp_buf, _CL_TIMESTAMP_BUF_SIZE, "%d.%m.%Y;%H.%M.%S", &_tm_now);
-
-}
-*/
-
-/* also functions as a NULL check for log_file */
 bool cl_is_log_initialized(void) {
 
-    if (log_file == NULL)
-        return false;
-
-    return true;
+    return (log_file != NULL);
 
 }
 
-/* no newline needed, pass fmt string and arguments */
 void cl_print_logn(const char* fmt, ...) {
 
     if (fmt == NULL)
@@ -60,8 +39,8 @@ void cl_print_logn(const char* fmt, ...) {
 
     char timestamp_buf[CL_TIMESTAMP_BUF_SIZE] = {0};
     char line_buf[CL_LINE_BUF_SIZE] = {0};
-
     int len;
+    va_list args;
 
     get_timestamp(timestamp_buf, CL_TIMESTAMP_BUF_SIZE, "%H.%M.%S");
     len = snprintf(line_buf, CL_LINE_BUF_SIZE, "[%s] : ", timestamp_buf);
@@ -70,13 +49,14 @@ void cl_print_logn(const char* fmt, ...) {
     if (len < 0 || len >= CL_LINE_BUF_SIZE)
         return;
 
-    va_list args;
     va_start(args, fmt);
 
         vsnprintf(line_buf + len, CL_LINE_BUF_SIZE - len, fmt, args);
 
     va_end(args);
-    fprintf_s(log_file, "%s\n", line_buf);
+
+    fprintf(log_file, "%s\n", line_buf);
+    fflush(log_file);
 
 }
 
@@ -98,7 +78,7 @@ void cl_init_log(const char* filename) {
 
     if (log_file == NULL) {
 
-        fprintf(stderr, "couldnt create log file [%s]", filename_buf);
+        fprintf(stderr, "couldnt create log file [%s]\n", filename_buf);
         return;
 
     }
