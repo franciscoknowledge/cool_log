@@ -9,7 +9,7 @@ int main(void) {
     FILE* so_peak;
     char read_buf[64] = {0};
 
-    cl_set_log_mode(CL_MODE_NEW);
+    cl_set_log_mode(CL_MODE_OVERWRITE);
     cl_set_log_level(CL_LEVEL_DEBUG);
 
     cl_init_log("cl_test");

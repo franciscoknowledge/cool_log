@@ -107,6 +107,8 @@ void cl_set_log_mode(Cl_Log_Mode mode) {
     if (mode < 0 || mode >= CL_MODE_COUNT)
         log_mode = CL_MODE_NEW;
 
+    log_mode = mode;
+
 }
 
 bool cl_is_log_initialized(void) {
@@ -149,11 +151,27 @@ void cl_init_log(const char* filename) {
 
     char filename_buf[CL_LINE_BUF_SIZE] = {0};
     char timestamp_buf[CL_TIMESTAMP_BUF_SIZE] = {0};
+    char* open_mode = "r";
 
     _get_timestamp(timestamp_buf, CL_TIMESTAMP_BUF_SIZE, "%d.%m.%Y-%H.%M.%S");
 
-    snprintf(filename_buf, CL_LINE_BUF_SIZE, "%s_%s.cool_log", filename, timestamp_buf);
-    log_file = fopen(filename_buf, "w");
+    if (log_mode == CL_MODE_NEW) {
+
+        snprintf(filename_buf, CL_LINE_BUF_SIZE, "%s_%s.cool_log", filename, timestamp_buf);
+        open_mode = "w";
+
+    } else if (log_mode == CL_MODE_APPEND || log_mode == CL_MODE_OVERWRITE) {
+
+        snprintf(filename_buf, CL_LINE_BUF_SIZE, "%s.cool_log", filename);
+
+    }
+
+    if (log_mode == CL_MODE_NEW || log_mode == CL_MODE_OVERWRITE)
+        open_mode = "w";
+    else if (log_mode == CL_MODE_APPEND)
+        open_mode = "a";
+
+    log_file = fopen(filename_buf, open_mode);
 
     if (log_file == NULL) {
 
