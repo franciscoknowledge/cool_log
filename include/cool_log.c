@@ -4,6 +4,8 @@
 #include <time.h>
 #include <stdarg.h>
 
+/* -- program constants -- */
+
 #define CL_TIMESTAMP_BUF_SIZE 64
 #define CL_FILE_BUF_SIZE 256
 #define CL_LINE_BUF_SIZE 8192
@@ -22,12 +24,15 @@ static const char* const MODE_STRINGS[] = {
     [CL_MODE_APPEND] = "APPEND",
 };
 
+/* -- private state for this file -- */
 
 static Cl_Log_Mode log_mode = CL_MODE_NEW;
 static Cl_Log_Level log_level = CL_LEVEL_DEBUG;
 static FILE* log_file = NULL;
 
-static void _get_timestamp(char* output_buf, size_t size, const char* fmt) {
+/* -- internal data -- */
+
+static void get_timestamp(char* output_buf, size_t size, const char* fmt) {
 
     time_t now = time(NULL);
     struct tm tm_now = {0};
@@ -40,25 +45,25 @@ static void _get_timestamp(char* output_buf, size_t size, const char* fmt) {
 
 }
 
-static const char* _get_log_str(Cl_Log_Level level) {
+static const char* get_log_str(Cl_Log_Level level) {
 
-    if ((level < 0) || (level >= CL_LEVEL_COUNT) || (LOG_STRINGS[level] == NULL))
+    if ((level < 0) || (level >= CL_LEVEL_COUNT_) || (LOG_STRINGS[level] == NULL))
         return "UNKNOWN";
 
     return LOG_STRINGS[level];
 
 }
 
-static const char* _get_mode_str(Cl_Log_Mode mode) {
+static const char* get_mode_str(Cl_Log_Mode mode) {
 
-    if ((mode < 0) || (mode >= CL_MODE_COUNT) || (MODE_STRINGS[mode] == NULL))
+    if ((mode < 0) || (mode >= CL_MODE_COUNT_) || (MODE_STRINGS[mode] == NULL))
         return "UNKNOWN";
 
     return MODE_STRINGS[mode];
 
 }
 
-static void _print_logn_internal(Cl_Log_Level level, const char* file, int line, const char* fmt, va_list args) {
+static void print_logn_internal(Cl_Log_Level level, const char* file, int line, const char* fmt, va_list args) {
 
     if (!cl_is_log_initialized())
         return;
@@ -80,8 +85,8 @@ static void _print_logn_internal(Cl_Log_Level level, const char* file, int line,
     if (line > 0)
         snprintf(line_buf, CL_TIMESTAMP_BUF_SIZE, "[Line: %d]", line);
 
-    _get_timestamp(timestamp_buf, CL_TIMESTAMP_BUF_SIZE, "%H.%M.%S");
-    len = snprintf(print_buf, CL_LINE_BUF_SIZE, "[%s]%s%s[%s] : ", _get_log_str(level), file_buf, line_buf, timestamp_buf);
+    get_timestamp(timestamp_buf, CL_TIMESTAMP_BUF_SIZE, "%H.%M.%S");
+    len = snprintf(print_buf, CL_LINE_BUF_SIZE, "[%s]%s%s[%s] : ", get_log_str(level), file_buf, line_buf, timestamp_buf);
 
     if (len < 0 || (size_t) len >= CL_LINE_BUF_SIZE)
         return;
@@ -93,36 +98,40 @@ static void _print_logn_internal(Cl_Log_Level level, const char* file, int line,
 
 }
 
-static void _forced_log(const char* fmt, ...) {
+static void forced_log(const char* fmt, ...) {
 
     va_list args;
+    
         va_start(args, fmt);
-        _print_logn_internal(CL_LEVEL_INFO, NULL, 0, fmt, args);
+        print_logn_internal(CL_LEVEL_INFO, NULL, 0, fmt, args);
+
     va_end(args);
 
 }
 
+/* -- user usage -- */
+
 void cl_set_log_mode(Cl_Log_Mode mode) {
 
-    if (mode < 0 || mode >= CL_MODE_COUNT)
-        log_mode = CL_MODE_NEW;
+    if (mode < 0 || mode >= CL_MODE_COUNT_)
+        mode = CL_MODE_NEW;
 
     log_mode = mode;
+
+}
+
+void cl_set_log_level(Cl_Log_Level level) {
+
+    if (level < 0 || level >= CL_LEVEL_COUNT_)
+        level = CL_LEVEL_NONE;
+
+    log_level = level;
 
 }
 
 bool cl_is_log_initialized(void) {
 
     return (log_file != NULL);
-
-}
-
-void cl_set_log_level(Cl_Log_Level level) {
-
-    if (level < 0 || level >= CL_LEVEL_COUNT)
-        level = CL_LEVEL_NONE;
-
-    log_level = level;
 
 }
 
@@ -135,8 +144,10 @@ void cl_print_logn(Cl_Log_Level level, const char* file, int line, const char* f
         return;
 
     va_list args;
+
         va_start(args, fmt);
-        _print_logn_internal(level, file, line, fmt, args);
+        print_logn_internal(level, file, line, fmt, args);
+        
     va_end(args);
 
 }
@@ -151,9 +162,9 @@ void cl_init_log(const char* filename) {
 
     char filename_buf[CL_LINE_BUF_SIZE] = {0};
     char timestamp_buf[CL_TIMESTAMP_BUF_SIZE] = {0};
-    char* open_mode = "r";
+    char* open_mode = "a"; /* append to prevent possible data loss */
 
-    _get_timestamp(timestamp_buf, CL_TIMESTAMP_BUF_SIZE, "%d.%m.%Y-%H.%M.%S");
+    get_timestamp(timestamp_buf, CL_TIMESTAMP_BUF_SIZE, "%d.%m.%Y-%H.%M.%S");
 
     if (log_mode == CL_MODE_NEW) {
 
@@ -180,9 +191,9 @@ void cl_init_log(const char* filename) {
 
     }
     
-    _forced_log("hi!");
-    _forced_log("mode: %s", _get_mode_str(log_mode));
-    _forced_log("level: %s\nlog started!", _get_log_str(log_level));
+    forced_log("hi!");
+    forced_log("mode: %s", get_mode_str(log_mode));
+    forced_log("level: %s\nlog started!", get_log_str(log_level));
 
 }
 
@@ -191,7 +202,7 @@ void cl_end_log(void) {
     if (!cl_is_log_initialized())
         return;
 
-    _forced_log("log ended!\nbye bye!");
+    forced_log("log ended!\nbye bye!");
 
     fclose(log_file);
     log_file = NULL;
