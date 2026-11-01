@@ -10,20 +10,6 @@
 #define CL_FILE_BUF_SIZE 256
 #define CL_LINE_BUF_SIZE 8192
 
-static const char* const LOG_STRINGS[] = {
-    [CL_LEVEL_DEBUG] = "DEBUG",
-    [CL_LEVEL_INFO] = "INFO",
-    [CL_LEVEL_WARN] = "WARN",
-    [CL_LEVEL_ERROR] = "ERROR",
-    [CL_LEVEL_NONE] = "NONE",
-};
-
-static const char* const MODE_STRINGS[] = {
-    [CL_MODE_NEW] = "NEW",
-    [CL_MODE_OVERWRITE] = "OVERWRITE",
-    [CL_MODE_APPEND] = "APPEND",
-};
-
 /* -- private state for this file -- */
 
 static Cl_Log_Mode log_mode = CL_MODE_NEW;
@@ -47,19 +33,37 @@ static void get_timestamp(char* output_buf, size_t size, const char* fmt) {
 
 static const char* get_log_str(Cl_Log_Level level) {
 
-    if ((level < 0) || (level >= CL_LEVEL_COUNT_) || (LOG_STRINGS[level] == NULL))
-        return "UNKNOWN";
+    switch (level) {
 
-    return LOG_STRINGS[level];
+        case CL_LEVEL_DEBUG: return "DEBUG";
+        case CL_LEVEL_INFO: return "INFO";
+        case CL_LEVEL_WARN: return "WARN";
+        case CL_LEVEL_ERROR: return "ERROR";
+        case CL_LEVEL_NONE: return "NONE";
+
+        case CL_LEVEL_COUNT_:
+            break;
+
+    }
+
+    return "UNKNOWN";
 
 }
 
 static const char* get_mode_str(Cl_Log_Mode mode) {
 
-    if ((mode < 0) || (mode >= CL_MODE_COUNT_) || (MODE_STRINGS[mode] == NULL))
-        return "UNKNOWN";
+    switch (mode) {
 
-    return MODE_STRINGS[mode];
+        case CL_MODE_NEW: return "NEW";
+        case CL_MODE_APPEND: return "APPEND";
+        case CL_MODE_OVERWRITE: return "OVERWRITE";
+        
+        case CL_MODE_COUNT_:
+            break;
+
+    }
+
+    return "UNKNOWN";
 
 }
 
