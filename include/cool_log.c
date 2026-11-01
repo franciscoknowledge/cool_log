@@ -58,8 +58,7 @@ static const char* get_mode_str(Cl_Log_Mode mode) {
         case CL_MODE_APPEND: return "APPEND";
         case CL_MODE_OVERWRITE: return "OVERWRITE";
         
-        case CL_MODE_COUNT_:
-            break;
+        case CL_MODE_COUNT_: break;
 
     }
 
